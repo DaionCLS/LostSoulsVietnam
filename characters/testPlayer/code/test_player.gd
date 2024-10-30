@@ -9,6 +9,3 @@ func get_input():
 func _physics_process(delta):
 	get_input()
 	move_and_slide()
-
-func huy():
-	print_debug("suck suck")
