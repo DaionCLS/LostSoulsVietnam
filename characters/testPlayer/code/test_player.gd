@@ -5,11 +5,18 @@ var speed = 300
 
 var MainSM: LimboHSM
 
+var WeaponON = false
+
+
 func _unhandled_input(event):
 	if event.is_action_pressed("attack"):
-		MainSM.dispatch(&"to_Attack")
-
-
+		if WeaponON == false:
+			WeaponON = true
+			MainSM.dispatch(&"to_AttackIdle")
+		else:
+			WeaponON = false
+			MainSM.dispatch(&"to_Idle")
+			
 func _ready():
 	initate_state_machine()
 
@@ -18,6 +25,7 @@ func get_input():
 	velocity = input_direction * speed
 
 func _physics_process(delta):
+	print("Weapon", WeaponON)
 	get_input()
 	move_and_slide()
 
@@ -28,37 +36,61 @@ func initate_state_machine():
 	
 	var Idle_State = LimboState.new().named("idle").call_on_enter(IdleStart).call_on_update(IdleUpdate)
 	var Walk_State = LimboState.new().named("walk").call_on_enter(WalkStart).call_on_update(WalkUpdate)
-	var Attack_State = LimboState.new().named("attack").call_on_enter(AttackStart).call_on_update(AttackUpdate)
-	
+	var AttackIdle_State = LimboState.new().named("attack_idle").call_on_enter(AttackIdleStart).call_on_update(AttackIdleUpdate)
+	var AttackWalk_State = LimboState.new().named("attack_walk").call_on_enter(AttackWalkStart).call_on_update(AttackWalkUpdate)
 	MainSM.add_child(Idle_State)
 	MainSM.add_child(Walk_State)
-	MainSM.add_child(Attack_State)
-	
+	MainSM.add_child(AttackIdle_State)
+	MainSM.add_child(AttackWalk_State)
 	MainSM.initial_state = Idle_State
 	
 	MainSM.add_transition(MainSM.ANYSTATE, Walk_State, "to_Walk")
-	MainSM.add_transition(MainSM.ANYSTATE, Attack_State, "to_Attack")
-	MainSM.add_transition(MainSM.ANYSTATE, Idle_State, "State_Ended")
+	MainSM.add_transition(MainSM.ANYSTATE, AttackIdle_State, "to_AttackIdle")
+	MainSM.add_transition(MainSM.ANYSTATE, AttackWalk_State, "to_AttackWalk")
+	MainSM.add_transition(MainSM.ANYSTATE, Idle_State, "to_Idle")
 	
 	MainSM.initialize(self)
 	MainSM.set_active(true)
 
 func IdleStart():
 	print("IdleStart")
+	AnimatedSprite2d.play("idle")
 func IdleUpdate(delta: float):
 	print("IdleUpdate")
-	if velocity.x or velocity.y != 0:
+	if velocity != Vector2.ZERO && !WeaponON:
 		MainSM.dispatch(&"to_Walk")
-	
+	if velocity != Vector2.ZERO && WeaponON:
+		MainSM.dispatch(&"to_AttackWalk")
+
+
 func WalkStart():
 	print("WalkStart")
+	AnimatedSprite2d.play("walk")
 func WalkUpdate(delta: float):
 	print("WalkUpdate")
-	if velocity == Vector2.ZERO:
-		MainSM.dispatch(&"State_Ended")
-func AttackStart():
-	print("AttackStart")
-func AttackUpdate(delta: float):
-	print("AttackUpdate")
-	if velocity.x or velocity.y != 0:
+	if velocity == Vector2.ZERO && !WeaponON:
+		MainSM.dispatch(&"to_Idle")
+	if velocity == Vector2.ZERO && WeaponON:
+		MainSM.dispatch(&"to_AttackIdle")
+
+
+func AttackIdleStart():
+	print("AttackIdleStart")
+	AnimatedSprite2d.play("attack")
+func AttackIdleUpdate(delta: float):
+	print("AttackIdleUpdate")
+	if velocity != Vector2.ZERO && !WeaponON:
 		MainSM.dispatch(&"to_Walk")
+	if velocity != Vector2.ZERO && WeaponON:
+		MainSM.dispatch(&"to_AttackWalk")
+
+
+func AttackWalkStart():
+	print("AttackWalkStart")
+	AnimatedSprite2d.play("attack")
+func AttackWalkUpdate(delta: float):
+	print("AttackWalkUpdate")
+	if velocity == Vector2.ZERO && !WeaponON:
+		MainSM.dispatch(&"to_Idle")
+	if velocity == Vector2.ZERO && WeaponON:
+		MainSM.dispatch(&"to_AttackIdle")
